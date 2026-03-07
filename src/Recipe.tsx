@@ -27,6 +27,14 @@ const totalMachineCost = tableWithCost.reduce((sum, row) => sum + row.machineCos
 const totalMaterialCost = tableWithCost.reduce((sum, row) => sum + row.materialCost, 0);
 const totalLaborCost = tableWithCost.reduce((sum, row) => sum + row.laborCost, 0);
 const totalCost = tableWithCost.reduce((sum, row) => sum + row.totalStepCost + row.laborCost, 0);
+const adminLegalFees = [
+  { category: "Program Administration", description: "Scheduling, reporting, and project coordination overhead", cost: 1740 },
+  { category: "Compliance Filing", description: "Lab compliance paperwork and record retention", cost: 120 },
+  { category: "Contract Review", description: "Template agreement and procurement language review", cost: 310 },
+  { category: "IP and Licensing Review", description: "Preliminary rights and usage review", cost: 280 },
+];
+const totalAdminLegalFees = adminLegalFees.reduce((sum, item) => sum + item.cost, 0);
+const grandTotalCost = totalCost + totalAdminLegalFees;
 
 const equipmentGroups = [
   {
@@ -212,6 +220,28 @@ export default function RecipePage() {
             <div>${totalLaborCost}</div>
           </div>
         </div>
+        <div className="mt-6 overflow-hidden rounded-[2rem] border border-sky-200/70 bg-white/90 shadow-[0_20px_60px_rgba(15,23,42,0.08)]">
+          <div className="grid grid-cols-[1.1fr_2.2fr_0.9fr] border-b border-sky-200/70 bg-sky-50/70 px-6 py-4 text-xs font-semibold uppercase tracking-[0.25em] text-slate-500">
+            <div>Category</div>
+            <div>Description</div>
+            <div>Cost</div>
+          </div>
+          {adminLegalFees.map((item) => (
+            <div
+              key={item.category}
+              className="grid grid-cols-[1.1fr_2.2fr_0.9fr] border-b border-sky-100/80 px-6 py-4 text-sm text-slate-700 last:border-b-0"
+            >
+              <div className="font-semibold text-slate-900">{item.category}</div>
+              <div>{item.description}</div>
+              <div>${item.cost}</div>
+            </div>
+          ))}
+          <div className="grid grid-cols-[1.1fr_2.2fr_0.9fr] bg-yellow-100/70 px-6 py-4 text-sm font-semibold text-slate-900">
+            <div>Subtotal</div>
+            <div>Administrative and legal fees</div>
+            <div>${totalAdminLegalFees}</div>
+          </div>
+        </div>
         <div className="mt-6 flex justify-center">
           <div className="group/total relative w-fit">
             <span
@@ -220,8 +250,8 @@ export default function RecipePage() {
             />
             <div className="relative z-10 rounded-[2rem] border border-orange-200/80 bg-white/95 px-10 py-8 text-center shadow-[0_24px_70px_rgba(255,132,63,0.2)]">
               <div className="text-xs uppercase tracking-[0.28em] text-orange-500">Total Cost</div>
-              <div className="mt-3 text-5xl font-semibold leading-none text-slate-900">${totalCost}</div>
-              <div className="mt-2 text-sm text-slate-600">Machine + materials + 3-intern labor baseline</div>
+              <div className="mt-3 text-5xl font-semibold leading-none text-slate-900">${grandTotalCost}</div>
+              <div className="mt-2 text-sm text-slate-600">Machine + materials + 3-intern labor + administrative/legal fees</div>
             </div>
           </div>
         </div>
