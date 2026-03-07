@@ -1,79 +1,32 @@
-import { Sun, ClipboardCheck, Beaker, Layers, Shield, ChevronRight, Calculator } from "lucide-react";
+import { ClipboardCheck, Beaker, Layers, Shield, ChevronRight } from "lucide-react";
 
-const processFlow = [
-  {
-    title: "Define Requirements + Process Plan",
-    text: "Document the target weight, flexibility, performance range, and substrate constraints. Select a low‑temperature stack family and verify tool compatibility.",
-    equipment: ["Process Tools (planning + routing)"],
-  },
-  {
-    title: "Substrate Preparation",
-    text: "Clean and surface‑condition substrates according to NanoLab SOPs. Log lot history, handling limits, and cleanliness state.",
-    equipment: ["Process Tools (wet benches / prep)"],
-  },
-  {
-    title: "Base + Barrier Layers",
-    text: "Deposit adhesion and barrier layers compatible with lightweight substrates and low thermal budget.",
-    equipment: ["Process Tools (deposition)"],
-  },
-  {
-    title: "Active Stack Formation",
-    text: "Deposit absorber and transport layers using low‑temperature processes approved for the substrate class.",
-    equipment: ["Process Tools (deposition)"],
-  },
-  {
-    title: "Patterning + Isolation",
-    text: "Define active areas and isolation using lab lithography and approved etch steps.",
-    equipment: ["Process Tools (lithography + etch)", "Raith E‑Beam (if needed)"],
-  },
-  {
-    title: "Contact Formation",
-    text: "Form electrical contacts and interconnects, then verify alignment and continuity.",
-    equipment: ["Process Tools (metal deposition)", "Backside Tools (bonding/dicing)"],
-  },
-  {
-    title: "Post‑Process Thermal Treatment",
-    text: "Perform thermal steps within substrate temperature limits to improve film quality and contact performance.",
-    equipment: ["Process Tools (annealing)"],
-  },
-  {
-    title: "Encapsulation / Lightweight Protection",
-    text: "Add protective, lightweight barrier layers suitable for handling and flexing.",
-    equipment: ["Process Tools (encapsulation / coating)"],
-  },
-  {
-    title: "In‑Process Inspection",
-    text: "Inspect after critical steps to catch defects early and avoid rework.",
-    equipment: ["Inspection", "Hitachi SEM (as needed)"],
-  },
-  {
-    title: "Porosity / Barrier Characterization",
-    text: "Validate barrier or porous layer properties when required by the stack design.",
-    equipment: ["Porosimeter (as needed)"],
-  },
-  {
-    title: "Electrical Testing + Documentation",
-    text: "Measure performance and log results, deviations, and run metadata for traceability.",
-    equipment: ["Inspection", "Metrology tools as applicable"],
-  },
-  {
-    title: "Review + Iterate",
-    text: "Analyze results and adjust the process window within SOP boundaries for the next run.",
-    equipment: ["Staff Technical Assistance Time (optional)"],
-  },
+const INTERN_COUNT = 3;
+const INTERN_HOURLY_RATE = 15;
+
+const stepTable = [
+  { step: "Substrate Preparation", machinery: "Sample Preb Wet Bench, Furnace Preclean Wet Bench", materials: "Glass/polymer substrates, DI water, solvents", materialCost: 42, hours: 0.75, rate: 166 },
+  { step: "Base + Barrier Layers", machinery: "Oxford PECVD, Beneq Atomic Layer Deposition System", materials: "SiNx/Al2O3 precursor gases, carrier gas", materialCost: 95, hours: 1.0, rate: 166 },
+  { step: "Active Stack Formation", machinery: "Tystar CVD, AJA ATC Orion 8 Sputtering system", materials: "Absorber target/feedstock, TCO target", materialCost: 135, hours: 1.0, rate: 166 },
+  { step: "Patterning + Isolation", machinery: "MJB-3 Mask Aligner, Developing Bench, Trion RIE, Oxford ICP Etcher (Chlorine)", materials: "Photoresist, developer, masks, etch gases", materialCost: 88, hours: 1.25, rate: 166 },
+  { step: "Contact Formation", machinery: "Denton Ebeam/thermal evaporator, Wire Bonder - FABLAB West Bond 7KE", materials: "Contact metal pellets, bond wire", materialCost: 74, hours: 1.0, rate: 166 },
+  { step: "Post-Process Thermal Treatment", machinery: "Annealing Furnace, Multipurpose; RTA-610", materials: "Process gas, quartz carriers", materialCost: 22, hours: 0.5, rate: 166 },
+  { step: "Encapsulation / Lightweight Protection", machinery: "Parylene Coater, Oxford PECVD-Cobra", materials: "Parylene dimer, barrier film/adhesive", materialCost: 64, hours: 0.75, rate: 166 },
+  { step: "In-Process Inspection", machinery: "Microscope 5 (FABLAB Front Hall), Profilm 3D, Hitachi S-3400 Variable Pressure SEM", materials: "SEM stubs, conductive tape, sample labels", materialCost: 18, hours: 0.75, rate: 97 },
+  { step: "Porosity / Barrier Characterization", machinery: "Micromeritics ASAP 2020 Porosimeter Test Station", materials: "Degas tubes, standards, sample prep consumables", materialCost: 16, hours: 0.5, rate: 51 },
 ];
 
-const costRates = [
-  { tool: "Process Tools", rate: 166, hours: 6 },
-  { tool: "Raith E‑Beam1", rate: 103, hours: 2 },
-  { tool: "Inspection", rate: 97, hours: 2 },
-  { tool: "Hitachi SEM", rate: 63, hours: 1 },
-  { tool: "Porosimeter", rate: 51, hours: 1 },
-  { tool: "Backside Tools", rate: 64, hours: 2 },
-  { tool: "Staff Technical Assistance Time", rate: 67, hours: 2 },
-];
+const tableWithCost = stepTable.map((row) => ({
+  ...row,
+  machineCost: Math.round(row.hours * row.rate),
+  laborCost: Math.round(row.hours * INTERN_COUNT * INTERN_HOURLY_RATE),
+  totalStepCost: Math.round(row.hours * row.rate) + row.materialCost,
+}));
 
-const totalCost = costRates.reduce((sum, item) => sum + item.rate * item.hours, 0);
+const totalHours = tableWithCost.reduce((sum, row) => sum + row.hours, 0);
+const totalMachineCost = tableWithCost.reduce((sum, row) => sum + row.machineCost, 0);
+const totalMaterialCost = tableWithCost.reduce((sum, row) => sum + row.materialCost, 0);
+const totalLaborCost = tableWithCost.reduce((sum, row) => sum + row.laborCost, 0);
+const totalCost = tableWithCost.reduce((sum, row) => sum + row.totalStepCost + row.laborCost, 0);
 
 const equipmentGroups = [
   {
@@ -181,31 +134,13 @@ const equipmentGroups = [
 
 export default function RecipePage() {
   return (
-    <div className="min-h-screen bg-[#e8f4ff] text-slate-900">
-      <div className="relative overflow-hidden">
-        <div className="absolute inset-0 bg-[url('/solar-panel-balcony-sunset-small.jpg')] bg-cover bg-center opacity-20" />
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(56,189,248,0.35),transparent_60%),radial-gradient(circle_at_70%_20%,rgba(250,204,21,0.25),transparent_45%)]" />
-        <div className="pointer-events-none absolute -top-40 left-1/2 h-[900px] w-[900px] -translate-x-1/2 rounded-full bg-[conic-gradient(from_0deg,rgba(250,204,21,0.3),rgba(56,189,248,0.08),rgba(250,204,21,0.25),rgba(56,189,248,0.06),rgba(250,204,21,0.3))] opacity-60 blur-2xl" />
+    <div className="relative min-h-screen bg-[#e8f4ff] text-slate-900">
+      <div className="pointer-events-none fixed inset-0 z-0 bg-[url('/solar-panel-balcony-sunset-small.jpg')] bg-cover bg-center bg-no-repeat opacity-20" />
+      <div className="pointer-events-none fixed inset-0 z-0 bg-[radial-gradient(circle_at_top,rgba(56,189,248,0.35),transparent_60%),radial-gradient(circle_at_70%_20%,rgba(250,204,21,0.25),transparent_45%)]" />
+      <div className="pointer-events-none fixed -top-40 left-1/2 z-0 h-[900px] w-[900px] -translate-x-1/2 rounded-full bg-[conic-gradient(from_0deg,rgba(250,204,21,0.3),rgba(56,189,248,0.08),rgba(250,204,21,0.25),rgba(56,189,248,0.06),rgba(250,204,21,0.3))] opacity-60 blur-2xl" />
 
-        <header className="relative z-10 mx-auto flex max-w-7xl items-center justify-between px-6 py-6 lg:px-10">
-          <div className="flex items-center gap-3">
-            <div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-sky-200/70 bg-white/70 shadow-[0_0_30px_rgba(250,204,21,0.2)] backdrop-blur">
-              <Sun className="h-5 w-5 text-yellow-500" />
-            </div>
-            <div>
-              <div className="text-lg font-semibold tracking-wide">UniVol</div>
-              <div className="text-xs uppercase tracking-[0.3em] text-sky-700/70">UMD NanoLab Recipe</div>
-            </div>
-          </div>
-
-          <nav className="hidden items-center gap-8 text-sm text-slate-600 md:flex">
-            <a href="/" className="transition hover:text-slate-900">Home</a>
-            <a href="#flow" className="transition hover:text-slate-900">Process</a>
-            <a href="#tools" className="transition hover:text-slate-900">Tooling</a>
-          </nav>
-        </header>
-
-        <main className="relative z-10 mx-auto max-w-7xl px-6 pb-16 pt-6 lg:px-10 lg:pb-20 lg:pt-10">
+      <div className="relative z-10">
+        <main className="mx-auto max-w-7xl px-6 pb-16 pt-10 lg:px-10 lg:pb-20 lg:pt-12">
           <div className="max-w-3xl rounded-[2rem] border border-white/60 bg-white/75 p-6 shadow-[0_20px_60px_rgba(15,23,42,0.08)] backdrop-blur">
             <div className="inline-flex items-center gap-2 rounded-full border border-sky-200/70 bg-white/80 px-4 py-2 text-xs uppercase tracking-[0.3em] text-sky-700">
               <ClipboardCheck className="h-4 w-4" />
@@ -236,58 +171,63 @@ export default function RecipePage() {
         </main>
       </div>
 
-      <section id="flow" className="mx-auto max-w-7xl px-6 pb-10 lg:px-10">
-        <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
-          {processFlow.map((step, i) => (
+      <section id="flow" className="relative z-10 mx-auto max-w-7xl px-6 pb-14 lg:px-10">
+        <div className="overflow-hidden rounded-[2rem] border border-sky-200/70 bg-white/90 shadow-[0_20px_60px_rgba(15,23,42,0.08)]">
+          <div className="border-b border-sky-200/70 bg-sky-50/60 px-6 py-2 text-xs text-slate-500">
+            Labor assumption: {INTERN_COUNT} interns at ${INTERN_HOURLY_RATE}/hr each.
+          </div>
+          <div className="grid grid-cols-[0.45fr_1.6fr_1.6fr_0.75fr_0.8fr_1.3fr_0.85fr_0.85fr] border-b border-sky-200/70 bg-sky-50/70 px-6 py-4 text-xs font-semibold uppercase tracking-[0.25em] text-slate-500">
+            <div>#</div>
+            <div>Step</div>
+            <div>Machinery</div>
+            <div>Expected Time</div>
+            <div>Machine Cost</div>
+            <div>Materials</div>
+            <div>Material Cost</div>
+            <div>Labor Cost</div>
+          </div>
+          {tableWithCost.map((row, index) => (
             <div
-              key={step.title}
-              className="rounded-[1.8rem] border border-sky-200/70 bg-white/85 p-6 shadow-[0_20px_60px_rgba(15,23,42,0.08)]"
+              key={row.step}
+              className="grid grid-cols-[0.45fr_1.6fr_1.6fr_0.75fr_0.8fr_1.3fr_0.85fr_0.85fr] border-b border-sky-100/80 px-6 py-4 text-sm text-slate-700 last:border-b-0"
             >
-              <div className="text-xs uppercase tracking-[0.25em] text-slate-400">Step {i + 1}</div>
-              <h3 className="mt-3 text-xl font-semibold text-slate-900">{step.title}</h3>
-              <p className="mt-3 text-sm leading-7 text-slate-600">{step.text}</p>
-              <div className="mt-4 text-xs uppercase tracking-[0.25em] text-slate-400">Equipment</div>
-              <div className="mt-2 grid gap-2 text-sm text-slate-700">
-                {step.equipment.map((item) => (
-                  <div key={item} className="rounded-xl border border-sky-100 bg-sky-50/70 px-3 py-2">
-                    {item}
-                  </div>
-                ))}
-              </div>
+              <div className="font-semibold text-slate-500">{index + 1}</div>
+              <div className="font-semibold text-slate-900">{row.step}</div>
+              <div>{row.machinery}</div>
+              <div>{row.hours.toFixed(2)} hrs</div>
+              <div>${row.machineCost}</div>
+              <div>{row.materials}</div>
+              <div>${row.materialCost}</div>
+              <div>${row.laborCost}</div>
             </div>
           ))}
+          <div className="grid grid-cols-[0.45fr_1.6fr_1.6fr_0.75fr_0.8fr_1.3fr_0.85fr_0.85fr] bg-yellow-100/70 px-6 py-4 text-sm font-semibold text-slate-900">
+            <div />
+            <div>Total</div>
+            <div>Small Commercial / MTECH baseline</div>
+            <div>{totalHours.toFixed(2)} hrs</div>
+            <div>${totalMachineCost}</div>
+            <div className="text-slate-700">Materials and labor shown separately</div>
+            <div>${totalMaterialCost}</div>
+            <div>${totalLaborCost}</div>
+          </div>
         </div>
-      </section>
-
-      <section id="cost" className="mx-auto max-w-7xl px-6 pb-14 lg:px-10">
-        <div className="rounded-[2rem] border border-sky-200/70 bg-white/90 p-6 shadow-[0_20px_60px_rgba(15,23,42,0.08)]">
-          <div className="flex flex-wrap items-center gap-3">
-            <div className="inline-flex items-center gap-2 rounded-full border border-sky-200/70 bg-white/70 px-3 py-1 text-xs uppercase tracking-[0.25em] text-sky-700">
-              <Calculator className="h-3.5 w-3.5" />
-              Cost Estimate
+        <div className="mt-6 flex justify-center">
+          <div className="group/total relative w-fit">
+            <span
+              aria-hidden="true"
+              className="pointer-events-none absolute left-1/2 top-1/2 z-0 h-14 w-14 -translate-x-1/2 -translate-y-1/2 scale-0 rounded-full bg-white opacity-0 blur-sm transition-all duration-700 ease-out group-hover/total:scale-[36] group-hover/total:opacity-90 group-focus-within/total:scale-[36] group-focus-within/total:opacity-90"
+            />
+            <div className="relative z-10 rounded-[2rem] border border-orange-200/80 bg-white/95 px-10 py-8 text-center shadow-[0_24px_70px_rgba(255,132,63,0.2)]">
+              <div className="text-xs uppercase tracking-[0.28em] text-orange-500">Total Cost</div>
+              <div className="mt-3 text-5xl font-semibold leading-none text-slate-900">${totalCost}</div>
+              <div className="mt-2 text-sm text-slate-600">Machine + materials + 3-intern labor baseline</div>
             </div>
-            <div className="text-sm text-slate-500">Tier: Small Commercial / MTECH</div>
-          </div>
-          <p className="mt-4 text-sm leading-6 text-slate-600">
-            Baseline pilot‑run assumptions shown below (hours can be adjusted). Rates provided as of March 6, 2026.
-          </p>
-          <div className="mt-5 grid gap-3 md:grid-cols-2">
-            {costRates.map((item) => (
-              <div key={item.tool} className="rounded-xl border border-sky-100 bg-sky-50/70 px-4 py-3">
-                <div className="text-sm font-semibold text-slate-900">{item.tool}</div>
-                <div className="mt-1 text-sm text-slate-600">
-                  {item.hours} hrs × ${item.rate}/hr = ${item.hours * item.rate}
-                </div>
-              </div>
-            ))}
-          </div>
-          <div className="mt-5 rounded-xl border border-yellow-200/70 bg-yellow-100/70 px-4 py-3 text-lg font-semibold text-slate-900">
-            Estimated total: ${totalCost}
           </div>
         </div>
       </section>
 
-      <section id="tools" className="mx-auto max-w-7xl px-6 pb-20 lg:px-10">
+      <section id="tools" className="relative z-10 mx-auto max-w-7xl px-6 pb-20 lg:px-10">
         <div className="flex items-center justify-between">
           <h2 className="text-2xl font-semibold">UMD NanoLab Tooling Map</h2>
           <a
