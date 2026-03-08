@@ -8,6 +8,10 @@ import RecipePage from "./Recipe.tsx";
 
 function RouterView() {
   const [pathname, setPathname] = useState(window.location.pathname);
+  const pidpBaseUrl = (import.meta.env.VITE_PIDP_BASE_URL as string | undefined)?.trim() || "/pidp";
+  const pidpProvider =
+    ((import.meta.env.VITE_PIDP_LOGIN_PROVIDER as string | undefined)?.trim().toLowerCase() || "google");
+  const loginHref = `${pidpBaseUrl.replace(/\/+$/, "")}/auth/${pidpProvider}/login`;
 
   useEffect(() => {
     const onPopState = () => setPathname(window.location.pathname);
@@ -60,10 +64,13 @@ function RouterView() {
             </div>
           </a>
 
-          <div className="hidden items-center gap-3 md:flex">
-            <button className="rounded-full bg-orange-500 px-6 py-2.5 text-sm font-semibold text-white shadow-[0_16px_40px_rgba(255,132,63,0.35)] transition hover:bg-orange-600">
+          <div className="flex items-center gap-3">
+            <a
+              href={loginHref}
+              className="inline-flex min-h-11 items-center justify-center whitespace-nowrap rounded-full bg-orange-500 px-4 py-2.5 text-sm font-semibold text-white shadow-[0_16px_40px_rgba(255,132,63,0.35)] transition hover:bg-orange-600 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-orange-300 focus-visible:ring-offset-2 sm:px-6"
+            >
               Log in
-            </button>
+            </a>
           </div>
         </div>
       </header>

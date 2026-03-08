@@ -3,24 +3,50 @@ import { ClipboardCheck, Beaker, Layers, Shield, ChevronRight } from "lucide-rea
 const INTERN_COUNT = 3;
 const INTERN_HOURLY_RATE = 15;
 
+function splitItems(value: string): string[] {
+  return value
+    .split(",")
+    .map((item) => item.trim())
+    .filter(Boolean);
+}
+
+function splitCost(total: number, count: number): number[] {
+  if (count <= 0) return [];
+  const base = Math.floor(total / count);
+  const remainder = total - base * count;
+  return Array.from({ length: count }, (_, index) => base + (index < remainder ? 1 : 0));
+}
+
 const stepTable = [
-  { step: "Substrate Preparation", machinery: "Sample Preb Wet Bench, Furnace Preclean Wet Bench", materials: "Glass/polymer substrates, DI water, solvents", materialCost: 42, hours: 0.75, rate: 166 },
-  { step: "Base + Barrier Layers", machinery: "Oxford PECVD, Beneq Atomic Layer Deposition System", materials: "SiNx/Al2O3 precursor gases, carrier gas", materialCost: 95, hours: 1.0, rate: 166 },
-  { step: "Active Stack Formation", machinery: "Tystar CVD, AJA ATC Orion 8 Sputtering system", materials: "Absorber target/feedstock, TCO target", materialCost: 135, hours: 1.0, rate: 166 },
-  { step: "Patterning + Isolation", machinery: "MJB-3 Mask Aligner, Developing Bench, Trion RIE, Oxford ICP Etcher (Chlorine)", materials: "Photoresist, developer, masks, etch gases", materialCost: 88, hours: 1.25, rate: 166 },
-  { step: "Contact Formation", machinery: "Denton Ebeam/thermal evaporator, Wire Bonder - FABLAB West Bond 7KE", materials: "Contact metal pellets, bond wire", materialCost: 74, hours: 1.0, rate: 166 },
-  { step: "Post-Process Thermal Treatment", machinery: "Annealing Furnace, Multipurpose; RTA-610", materials: "Process gas, quartz carriers", materialCost: 22, hours: 0.5, rate: 166 },
-  { step: "Encapsulation / Lightweight Protection", machinery: "Parylene Coater, Oxford PECVD-Cobra", materials: "Parylene dimer, barrier film/adhesive", materialCost: 64, hours: 0.75, rate: 166 },
-  { step: "In-Process Inspection", machinery: "Microscope 5 (FABLAB Front Hall), Profilm 3D, Hitachi S-3400 Variable Pressure SEM", materials: "SEM stubs, conductive tape, sample labels", materialCost: 18, hours: 0.75, rate: 97 },
-  { step: "Porosity / Barrier Characterization", machinery: "Micromeritics ASAP 2020 Porosimeter Test Station", materials: "Degas tubes, standards, sample prep consumables", materialCost: 16, hours: 0.5, rate: 51 },
+  { step: "The Substrate", machinery: "Sample Preb Wet Bench, Furnace Preclean Wet Bench", materials: "Glass/polymer substrates, DI water, solvents", output: "Cleaned, contamination-reduced substrate ready for film deposition", materialCost: 42, hours: 0.75, rate: 166 },
+  { step: "The Inner Dialectric", machinery: "Oxford PECVD, Beneq Atomic Layer Deposition System", materials: "SiNx/Al2O3 precursor gases, carrier gas", output: "Barrier-coated substrate with base dielectric stack", materialCost: 95, hours: 1.0, rate: 166 },
+  { step: "The Active Stack", machinery: "Tystar CVD, AJA ATC Orion 8 Sputtering system", materials: "Absorber target/feedstock, TCO target", output: "Photovoltaic active stack with initial junction functionality", materialCost: 135, hours: 1.0, rate: 166 },
+  { step: "The Outer Dialectric", machinery: "MJB-3 Mask Aligner, Developing Bench, Trion RIE, Oxford ICP Etcher (Chlorine)", materials: "Photoresist, developer, masks, etch gases", output: "Electrically isolated cell geometry and patterned device regions", materialCost: 88, hours: 1.25, rate: 166 },
+  { step: "The Interface", machinery: "Denton Ebeam/thermal evaporator, Wire Bonder - FABLAB West Bond 7KE", materials: "Contact metal pellets, bond wire", output: "Low-resistance electrical contacts and interconnect-ready terminals", materialCost: 74, hours: 1.0, rate: 166 },
+  { step: "Ruggedization", machinery: "Annealing Furnace, Multipurpose; RTA-610", materials: "Process gas, quartz carriers", output: "Stabilized film properties and improved interface quality", materialCost: 22, hours: 0.5, rate: 166 },
+  { step: "Encapsulation", machinery: "Parylene Coater, Oxford PECVD-Cobra", materials: "Parylene dimer, barrier film/adhesive", output: "Protected lightweight device with moisture/handling barrier", materialCost: 64, hours: 0.75, rate: 166 },
+  { step: "Inspection", machinery: "Microscope 5 (FABLAB Front Hall), Profilm 3D, Hitachi S-3400 Variable Pressure SEM", materials: "SEM stubs, conductive tape, sample labels", output: "Defect map and dimensional/process conformance data", materialCost: 18, hours: 0.75, rate: 97 },
+  { step: "Characterization", machinery: "Micromeritics ASAP 2020 Porosimeter Test Station", materials: "Degas tubes, standards, sample prep consumables", output: "Barrier porosity metrics and pass/fail characterization evidence", materialCost: 16, hours: 0.5, rate: 51 },
 ];
 
-const tableWithCost = stepTable.map((row) => ({
-  ...row,
-  machineCost: Math.round(row.hours * row.rate),
-  laborCost: Math.round(row.hours * INTERN_COUNT * INTERN_HOURLY_RATE),
-  totalStepCost: Math.round(row.hours * row.rate) + row.materialCost,
-}));
+const tableWithCost = stepTable.map((row) => {
+  const machineCost = Math.round(row.hours * row.rate);
+  const laborCost = Math.round(row.hours * INTERN_COUNT * INTERN_HOURLY_RATE);
+  const machineryItems = splitItems(row.machinery);
+  const materialItems = splitItems(row.materials);
+
+  return {
+    ...row,
+    machineCost,
+    laborCost,
+    totalStepCost: machineCost + row.materialCost,
+    stepCost: machineCost + row.materialCost + laborCost,
+    machineryItems,
+    materialItems,
+    machineryItemCosts: splitCost(machineCost, machineryItems.length),
+    materialItemCosts: splitCost(row.materialCost, materialItems.length),
+  };
+});
 
 const totalHours = tableWithCost.reduce((sum, row) => sum + row.hours, 0);
 const totalMachineCost = tableWithCost.reduce((sum, row) => sum + row.machineCost, 0);
@@ -181,65 +207,195 @@ export default function RecipePage() {
 
       <section id="flow" className="relative z-10 mx-auto max-w-7xl px-6 pb-14 lg:px-10">
         <div className="overflow-hidden rounded-[2rem] border border-sky-200/70 bg-white/90 shadow-[0_20px_60px_rgba(15,23,42,0.08)]">
-          <div className="border-b border-sky-200/70 bg-sky-50/60 px-6 py-2 text-xs text-slate-500">
+          <div className="border-b border-sky-200/70 bg-sky-50/60 px-4 py-2 text-xs text-slate-500 sm:px-6">
             Labor assumption: {INTERN_COUNT} interns at ${INTERN_HOURLY_RATE}/hr each.
           </div>
-          <div className="grid grid-cols-[0.45fr_1.6fr_1.6fr_0.75fr_0.8fr_1.3fr_0.85fr_0.85fr] border-b border-sky-200/70 bg-sky-50/70 px-6 py-4 text-xs font-semibold uppercase tracking-[0.25em] text-slate-500">
-            <div>#</div>
-            <div>Step</div>
-            <div>Machinery</div>
-            <div>Expected Time</div>
-            <div>Machine Cost</div>
-            <div>Materials</div>
-            <div>Material Cost</div>
-            <div>Labor Cost</div>
+          <div className="max-md:hidden">
+            <div>
+              <div className="grid grid-cols-[1.2fr_1.2fr_0.72fr_0.72fr_1fr_0.72fr_0.72fr_0.82fr] gap-x-3 border-b border-sky-200/70 bg-sky-50/70 px-6 py-4 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">
+                <div>Machinery</div>
+                <div>Output</div>
+                <div>Expected Time</div>
+                <div>Machine Cost</div>
+                <div>Materials</div>
+                <div>Material Cost</div>
+                <div>Labor Cost</div>
+                <div>Step Cost</div>
+              </div>
+              {tableWithCost.map((row, index) => (
+                <div
+                  key={row.step}
+                  className="border-b border-sky-100/80 last:border-b-0 odd:bg-white even:bg-slate-50/45"
+                >
+                  <div className="flex items-center justify-between border-b border-sky-100/90 bg-sky-50/70 px-6 py-3">
+                    <div className="text-xl font-semibold leading-tight text-slate-900">{index + 1}. {row.step}</div>
+                    <div className="rounded-full border border-orange-200/80 bg-orange-50/80 px-3 py-1 text-sm font-semibold text-orange-600">
+                      Step Cost ${row.stepCost}
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-[1.2fr_1.2fr_0.72fr_0.72fr_1fr_0.72fr_0.72fr_0.82fr] gap-x-3 px-6 py-5 text-sm text-slate-700">
+                    <div className="space-y-2">
+                      {row.machineryItems.map((item, itemIndex) => (
+                        <div
+                          key={`${row.step}-machinery-${itemIndex}`}
+                          className="flex items-start justify-between gap-2 rounded-lg border border-slate-200/70 bg-white/80 px-2.5 py-1.5"
+                        >
+                          <span className="min-w-0 leading-5">{item}</span>
+                          <span className="shrink-0 rounded-full bg-slate-100 px-2 py-0.5 text-xs font-semibold text-slate-600">
+                            ${row.machineryItemCosts[itemIndex]}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                    <div className="leading-6 text-slate-600">{row.output}</div>
+                    <div className="font-medium text-slate-700">{row.hours.toFixed(2)} hrs</div>
+                    <div className="font-medium text-slate-800">${row.machineCost}</div>
+                    <div className="space-y-2">
+                      {row.materialItems.map((item, itemIndex) => (
+                        <div
+                          key={`${row.step}-materials-${itemIndex}`}
+                          className="flex items-start justify-between gap-2 rounded-lg border border-slate-200/70 bg-white/80 px-2.5 py-1.5"
+                        >
+                          <span className="min-w-0 leading-5">{item}</span>
+                          <span className="shrink-0 rounded-full bg-slate-100 px-2 py-0.5 text-xs font-semibold text-slate-600">
+                            ${row.materialItemCosts[itemIndex]}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                    <div className="font-medium text-slate-800">${row.materialCost}</div>
+                    <div className="font-medium text-slate-800">${row.laborCost}</div>
+                    <div className="text-base font-semibold text-slate-900">${row.stepCost}</div>
+                  </div>
+                </div>
+              ))}
+              <div className="grid grid-cols-[1.2fr_1.2fr_0.72fr_0.72fr_1fr_0.72fr_0.72fr_0.82fr] gap-x-3 bg-yellow-100/70 px-6 py-4 text-sm font-semibold text-slate-900">
+                <div>Small Commercial / MTECH baseline</div>
+                <div className="text-slate-700">Production outputs summarized per step above</div>
+                <div>{totalHours.toFixed(2)} hrs</div>
+                <div>${totalMachineCost}</div>
+                <div className="text-slate-700">Materials and labor shown separately</div>
+                <div>${totalMaterialCost}</div>
+                <div>${totalLaborCost}</div>
+                <div>${totalCost}</div>
+              </div>
+            </div>
           </div>
           {tableWithCost.map((row, index) => (
-            <div
-              key={row.step}
-              className="grid grid-cols-[0.45fr_1.6fr_1.6fr_0.75fr_0.8fr_1.3fr_0.85fr_0.85fr] border-b border-sky-100/80 px-6 py-4 text-sm text-slate-700 last:border-b-0"
-            >
-              <div className="font-semibold text-slate-500">{index + 1}</div>
-              <div className="font-semibold text-slate-900">{row.step}</div>
-              <div>{row.machinery}</div>
-              <div>{row.hours.toFixed(2)} hrs</div>
-              <div>${row.machineCost}</div>
-              <div>{row.materials}</div>
-              <div>${row.materialCost}</div>
-              <div>${row.laborCost}</div>
+            <div key={`${row.step}-mobile`} className="border-b border-sky-100/80 last:border-b-0 md:hidden">
+              <div className="space-y-4 px-4 py-4">
+                <div className="flex items-start justify-between gap-3 rounded-xl border border-sky-200/80 bg-sky-50/80 px-3 py-3">
+                  <div className="min-w-0">
+                    <div className="text-lg font-semibold leading-tight text-slate-900">{index + 1}. {row.step}</div>
+                  </div>
+                  <div className="shrink-0 rounded-full border border-sky-200/80 bg-sky-50/80 px-3 py-1 text-xs font-semibold text-sky-700">
+                    {row.hours.toFixed(2)} hrs
+                  </div>
+                </div>
+                <div className="grid gap-3 text-sm text-slate-700">
+                  <div>
+                    <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">Machinery</div>
+                    <div className="mt-1 space-y-1.5 text-slate-700">
+                      {row.machineryItems.map((item, itemIndex) => (
+                        <div key={`${row.step}-mobile-machinery-${itemIndex}`} className="flex items-start justify-between gap-2 leading-6">
+                          <span className="min-w-0">{item}</span>
+                          <span className="shrink-0 text-slate-500">${row.machineryItemCosts[itemIndex]}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">Materials</div>
+                    <div className="mt-1 space-y-1.5 text-slate-700">
+                      {row.materialItems.map((item, itemIndex) => (
+                        <div key={`${row.step}-mobile-materials-${itemIndex}`} className="flex items-start justify-between gap-2 leading-6">
+                          <span className="min-w-0">{item}</span>
+                          <span className="shrink-0 text-slate-500">${row.materialItemCosts[itemIndex]}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">Output</div>
+                    <div className="mt-1 leading-6 text-slate-700">{row.output}</div>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                  <div className="rounded-xl border border-slate-200/80 bg-white px-2.5 py-2 text-center">
+                    <div className="text-[10px] uppercase tracking-[0.16em] text-slate-400">Machine</div>
+                    <div className="mt-1 text-sm font-semibold text-slate-900">${row.machineCost}</div>
+                  </div>
+                  <div className="rounded-xl border border-slate-200/80 bg-white px-2.5 py-2 text-center">
+                    <div className="text-[10px] uppercase tracking-[0.16em] text-slate-400">Material</div>
+                    <div className="mt-1 text-sm font-semibold text-slate-900">${row.materialCost}</div>
+                  </div>
+                  <div className="rounded-xl border border-slate-200/80 bg-white px-2.5 py-2 text-center">
+                    <div className="text-[10px] uppercase tracking-[0.16em] text-slate-400">Labor</div>
+                    <div className="mt-1 text-sm font-semibold text-slate-900">${row.laborCost}</div>
+                  </div>
+                  <div className="rounded-xl border border-orange-200/80 bg-orange-50/80 px-2.5 py-2 text-center">
+                    <div className="text-[10px] uppercase tracking-[0.16em] text-orange-500">Step Cost</div>
+                    <div className="mt-1 text-sm font-semibold text-slate-900">${row.stepCost}</div>
+                  </div>
+                </div>
+              </div>
             </div>
           ))}
-          <div className="grid grid-cols-[0.45fr_1.6fr_1.6fr_0.75fr_0.8fr_1.3fr_0.85fr_0.85fr] bg-yellow-100/70 px-6 py-4 text-sm font-semibold text-slate-900">
-            <div />
-            <div>Total</div>
-            <div>Small Commercial / MTECH baseline</div>
-            <div>{totalHours.toFixed(2)} hrs</div>
-            <div>${totalMachineCost}</div>
-            <div className="text-slate-700">Materials and labor shown separately</div>
-            <div>${totalMaterialCost}</div>
-            <div>${totalLaborCost}</div>
+          <div className="space-y-3 bg-yellow-100/70 px-4 py-4 md:hidden">
+            <div className="text-sm font-semibold text-slate-900">Totals</div>
+            <div className="grid grid-cols-2 gap-2 text-sm">
+              <div className="rounded-xl border border-yellow-200/80 bg-white/90 px-3 py-2">
+                <div className="text-[10px] uppercase tracking-[0.16em] text-slate-500">Hours</div>
+                <div className="mt-1 font-semibold text-slate-900">{totalHours.toFixed(2)} hrs</div>
+              </div>
+              <div className="rounded-xl border border-yellow-200/80 bg-white/90 px-3 py-2">
+                <div className="text-[10px] uppercase tracking-[0.16em] text-slate-500">Machine</div>
+                <div className="mt-1 font-semibold text-slate-900">${totalMachineCost}</div>
+              </div>
+              <div className="rounded-xl border border-yellow-200/80 bg-white/90 px-3 py-2">
+                <div className="text-[10px] uppercase tracking-[0.16em] text-slate-500">Materials</div>
+                <div className="mt-1 font-semibold text-slate-900">${totalMaterialCost}</div>
+              </div>
+              <div className="rounded-xl border border-yellow-200/80 bg-white/90 px-3 py-2">
+                <div className="text-[10px] uppercase tracking-[0.16em] text-slate-500">Labor</div>
+                <div className="mt-1 font-semibold text-slate-900">${totalLaborCost}</div>
+              </div>
+              <div className="rounded-xl border border-orange-200/80 bg-orange-50/80 px-3 py-2">
+                <div className="text-[10px] uppercase tracking-[0.16em] text-orange-500">Step Cost</div>
+                <div className="mt-1 font-semibold text-slate-900">${totalCost}</div>
+              </div>
+            </div>
           </div>
         </div>
         <div className="mt-6 overflow-hidden rounded-[2rem] border border-sky-200/70 bg-white/90 shadow-[0_20px_60px_rgba(15,23,42,0.08)]">
-          <div className="grid grid-cols-[1.1fr_2.2fr_0.9fr] border-b border-sky-200/70 bg-sky-50/70 px-6 py-4 text-xs font-semibold uppercase tracking-[0.25em] text-slate-500">
+          <div className="grid grid-cols-[1.1fr_2.2fr_0.9fr] border-b border-sky-200/70 bg-sky-50/70 px-6 py-4 text-xs font-semibold uppercase tracking-[0.25em] text-slate-500 max-md:hidden">
             <div>Category</div>
             <div>Description</div>
             <div>Cost</div>
           </div>
           {adminLegalFees.map((item) => (
-            <div
-              key={item.category}
-              className="grid grid-cols-[1.1fr_2.2fr_0.9fr] border-b border-sky-100/80 px-6 py-4 text-sm text-slate-700 last:border-b-0"
-            >
-              <div className="font-semibold text-slate-900">{item.category}</div>
-              <div>{item.description}</div>
-              <div>${item.cost}</div>
+            <div key={item.category} className="border-b border-sky-100/80 last:border-b-0">
+              <div className="grid grid-cols-[1.1fr_2.2fr_0.9fr] px-6 py-4 text-sm text-slate-700 max-md:hidden">
+                <div className="font-semibold text-slate-900">{item.category}</div>
+                <div>{item.description}</div>
+                <div>${item.cost}</div>
+              </div>
+              <div className="space-y-2 px-4 py-4 text-sm md:hidden">
+                <div className="font-semibold text-slate-900">{item.category}</div>
+                <div className="leading-6 text-slate-700">{item.description}</div>
+                <div className="inline-flex rounded-full border border-sky-200/80 bg-sky-50/80 px-3 py-1 text-sm font-semibold text-sky-800">
+                  ${item.cost}
+                </div>
+              </div>
             </div>
           ))}
-          <div className="grid grid-cols-[1.1fr_2.2fr_0.9fr] bg-yellow-100/70 px-6 py-4 text-sm font-semibold text-slate-900">
+          <div className="grid grid-cols-[1.1fr_2.2fr_0.9fr] bg-yellow-100/70 px-6 py-4 text-sm font-semibold text-slate-900 max-md:hidden">
             <div>Subtotal</div>
             <div>Administrative and legal fees</div>
             <div>${totalAdminLegalFees}</div>
+          </div>
+          <div className="bg-yellow-100/70 px-4 py-4 text-sm font-semibold text-slate-900 md:hidden">
+            Subtotal (Administrative and legal fees): ${totalAdminLegalFees}
           </div>
         </div>
         <div className="mt-6 flex justify-center">
@@ -254,6 +410,50 @@ export default function RecipePage() {
               <div className="mt-2 text-sm text-slate-600">Machine + materials + 3-intern labor + administrative/legal fees</div>
             </div>
           </div>
+        </div>
+        <div className="mt-6 rounded-[2rem] border border-sky-200/70 bg-white/90 p-6 shadow-[0_20px_60px_rgba(15,23,42,0.08)]">
+          <div className="text-xs uppercase tracking-[0.25em] text-sky-700">Balcony Solar Recipe</div>
+          <div className="mt-3 text-sm leading-6 text-slate-700">
+            <span className="font-semibold text-slate-900">Purpose:</span> define the key engineering and compliance
+            work required to move from a lab process flow to safe, deployable lightweight balcony solar systems.
+          </div>
+          <ul className="mt-4 grid gap-3 text-sm leading-6 text-slate-700">
+            <li className="rounded-xl border border-slate-200/80 bg-slate-50/80 px-4 py-3">
+              <div className="font-semibold text-slate-900">Certified safety and compliance path</div>
+              <div>Scope: electrical, fire, building-code, and interconnection requirements.</div>
+              <div className="text-slate-600">
+                Purpose: ensure the system is legally deployable and safe for occupants, installers, and utilities.
+              </div>
+            </li>
+            <li className="rounded-xl border border-slate-200/80 bg-slate-50/80 px-4 py-3">
+              <div className="font-semibold text-slate-900">Outdoor durability validation</div>
+              <div>Scope: UV, moisture ingress, thermal cycling, hail, and wind loading.</div>
+              <div className="text-slate-600">
+                Purpose: verify long-term field reliability and prevent premature degradation/failure.
+              </div>
+            </li>
+            <li className="rounded-xl border border-slate-200/80 bg-slate-50/80 px-4 py-3">
+              <div className="font-semibold text-slate-900">Mounting and structural specifications</div>
+              <div>Scope: balcony railings and facade attachment interfaces.</div>
+              <div className="text-slate-600">
+                Purpose: maintain structural safety under normal and extreme loads while simplifying installation.
+              </div>
+            </li>
+            <li className="rounded-xl border border-slate-200/80 bg-slate-50/80 px-4 py-3">
+              <div className="font-semibold text-slate-900">Plug-in inverter/BMS architecture</div>
+              <div>Scope: anti-islanding behavior and electrical protection requirements.</div>
+              <div className="text-slate-600">
+                Purpose: deliver safe, grid-compatible operation with robust fault handling and monitoring.
+              </div>
+            </li>
+            <li className="rounded-xl border border-slate-200/80 bg-slate-50/80 px-4 py-3">
+              <div className="font-semibold text-slate-900">Manufacturability and QA plan</div>
+              <div>Scope: yield, reliability, and failure-rate targets at scale.</div>
+              <div className="text-slate-600">
+                Purpose: reduce unit cost and variance while meeting repeatable production quality standards.
+              </div>
+            </li>
+          </ul>
         </div>
       </section>
 
